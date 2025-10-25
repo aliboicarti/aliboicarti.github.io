@@ -1,3 +1,52 @@
+<?php
+// Check if this is an API request
+if (isset($_GET['endpoint']) && $_GET['endpoint'] === 'orders' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    ob_clean();
+    header("Content-Type: application/json; charset=UTF-8");
+    
+    // Database configuration
+    $host = "localhost";
+    $dbname = "my_website";
+    $username = "dev"; 
+    $password = "";
+
+    try {
+        $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (!isset($data['name']) || !isset($data['phone']) || !isset($data['description'])) {
+            http_response_code(400);
+            echo json_encode(["error" => "Name, phone, and description are required"]);
+            exit;
+        }
+        
+        $stmt = $pdo->prepare("INSERT INTO orders (name, phone, address, email, description) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $data['name'],
+            $data['phone'],
+            $data['address'] ?? null,
+            $data['email'] ?? null,
+            $data['description']
+        ]);
+        
+        http_response_code(201);
+        echo json_encode([
+            "id" => $pdo->lastInsertId(),
+            "message" => "Order created successfully"
+        ]);
+        exit;
+        
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["error" => "Database error"]);
+        exit;
+    }
+}
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +54,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NorthStarWin|خدمات در و پنجره pvc </title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style/home.css">
+    <link rel="stylesheet" href="../style/home.css">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
@@ -186,77 +235,7 @@
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.min.js"></script>
-    <script>
-        let formData = {};
-        let currentStep = 1;
-
-        function handleFabClick() {
-            if (currentStep === 1) {
-                nextStep();
-            } else if (currentStep === 2) {
-                submitForm();
-            }
-        }
-
-        function nextStep() {
-            const name = document.getElementById('name').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-
-            if (!name || !phone) {
-                alert('لطفاً نام و شماره تماس را وارد کنید');
-                return;
-            }
-
-            formData.name = name;
-            formData.phone = phone;
-            formData.address = document.getElementById('address').value.trim();
-            formData.email = document.getElementById('email').value.trim();
-
-            document.getElementById('step1').classList.remove('active');
-            document.getElementById('step2').classList.add('active');
-            document.getElementById('fabIcon').textContent = 'send';
-            currentStep = 2;
-        }
-
-        function submitForm() {
-            const description = document.getElementById('description').value.trim();
-
-            if (!description) {
-                alert('لطفاً توضیحات سفارش را وارد کنید');
-                return;
-            }
-
-            formData.description = description;
-
-            console.log('اطلاعات فرم:', formData);
-
-            document.getElementById('step2').classList.remove('active');
-            document.getElementById('successMessage').classList.add('active');
-            document.getElementById('fabButton').style.display = 'none';
-
-            setTimeout(() => {
-                resetForm();
-            }, 9000);
-        }
-
-        function resetForm() {
-            document.getElementById('successMessage').classList.remove('active');
-            document.getElementById('step1').classList.add('active');
-            document.getElementById('fabButton').style.display = 'flex';
-            document.getElementById('fabIcon').textContent = 'arrow_back';
-            
-            document.getElementById('name').value = '';
-            document.getElementById('phone').value = '';
-            document.getElementById('address').value = '';
-            document.getElementById('email').value = '';
-            document.getElementById('description').value = '';
-            
-            formData = {};
-            currentStep = 1;
-            
-            componentHandler.upgradeDom();
-        }
-    </script>
+    <script src="../js/spt.js" ></script>
 
 </body>
 </html>
